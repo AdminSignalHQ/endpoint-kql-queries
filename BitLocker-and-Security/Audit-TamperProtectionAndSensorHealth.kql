@@ -1,0 +1,18 @@
+﻿// ============================================================================
+// Title: Audit Tamper Protection, Real-Time Protection, and BitLocker Posture
+// Author: AdminSignal (https://adminsignal.com)
+// Purpose: Uses Defender TVM Secure Configuration Assessment to find managed
+//          endpoints where critical endpoint protections have drifted.
+// ============================================================================
+DeviceTvmSecureConfigurationAssessment
+| where Timestamp > ago(7d)
+| where IsCompliant == 0 and IsApplicable == 1
+| where ConfigurationId in (
+    "scid-2010", // Tamper Protection enabled
+    "scid-2011", // Real-time protection enabled
+    "scid-2012", // Behavior monitoring enabled
+    "scid-2090"  // BitLocker OS drive encrypted
+)
+| summarize arg_max(Timestamp, *) by DeviceId, ConfigurationId
+| project Timestamp, DeviceName, ConfigurationId, ConfigurationSubcategory, Context
+| order by ConfigurationId asc, DeviceName asc

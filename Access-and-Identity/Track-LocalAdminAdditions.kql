@@ -1,0 +1,22 @@
+﻿// ============================================================================
+// Title: Track Additions to Local Administrators Group (S-1-5-32-544)
+// Author: AdminSignal (https://adminsignal.com)
+// Purpose: Audits all accounts added to the local Administrators group across
+//          Windows endpoints to detect unauthorized elevation or GPO drift.
+// ============================================================================
+DeviceEvents
+| where Timestamp > ago(30d)
+| where ActionType == "UserAccountAddedToLocalGroup"
+| extend ParsedFields = parse_json(AdditionalFields)
+| extend GroupSid = tostring(ParsedFields.GroupSid)
+| where GroupSid == "S-1-5-32-544"
+| project
+    Timestamp,
+    DeviceName,
+    AddedAccountSid = AccountSid,
+    AddedAccountName = AccountName,
+    AddedAccountDomain = AccountDomain,
+    InitiatingUser = InitiatingProcessAccountName,
+    InitiatingProcess = InitiatingProcessFileName,
+    InitiatingCommandLine = InitiatingProcessCommandLine
+| order by Timestamp desc

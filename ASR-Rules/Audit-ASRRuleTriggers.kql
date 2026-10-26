@@ -1,0 +1,19 @@
+﻿// ============================================================================
+// Title: Audit Attack Surface Reduction (ASR) Rule Triggers & Exclusions
+// Author: AdminSignal (https://adminsignal.com)
+// Purpose: Summarizes ASR Audit and Block events over the last 30 days by rule,
+//          target binary, and initiating process so engineers can validate false
+//          positives before transitioning Intune ASR policies from Audit to Block.
+// ============================================================================
+DeviceEvents
+| where Timestamp > ago(30d)
+| where ActionType startswith "Asr"
+| extend IsAudit = iff(ActionType endswith "Audited", "Audit", "Blocked")
+| summarize
+    TotalHits = count(),
+    AffectedDevices = dcount(DeviceId),
+    SampleDevice = any(DeviceName),
+    FirstSeen = min(Timestamp),
+    LastSeen = max(Timestamp)
+    by ActionType, IsAudit, FileName, FolderPath, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by AffectedDevices desc, TotalHits desc

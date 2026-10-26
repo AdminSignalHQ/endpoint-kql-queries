@@ -1,0 +1,20 @@
+﻿// ============================================================================
+// Title: Endpoints Missing Critical Windows Cumulative & Security Updates
+// Author: AdminSignal (https://adminsignal.com)
+// Purpose: Correlates Defender Vulnerability Management (TVM) findings with
+//          DeviceInfo to highlight devices missing critical OS patches.
+// ============================================================================
+DeviceTvmSoftwareVulnerabilities
+| where VulnerabilitySeverityLevel == "Critical"
+| where SoftwareName in ("windows_10", "windows_11")
+| join kind=inner (
+    DeviceInfo
+    | summarize arg_max(Timestamp, *) by DeviceId
+    | project DeviceId, DeviceName, OSPlatform, OSVersion, OSBuild, OnboardingStatus
+) on DeviceId
+| summarize
+    CriticalCVEs = dcount(CveId),
+    RecommendedKBs = make_set(RecommendedSecurityUpdate, 5),
+    SampleCVEs = make_set(CveId, 5)
+    by DeviceName, OSPlatform, OSVersion, OSBuild
+| order by CriticalCVEs desc

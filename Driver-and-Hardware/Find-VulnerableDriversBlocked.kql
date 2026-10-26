@@ -1,0 +1,16 @@
+﻿// ============================================================================
+// Title: Identify Vulnerable Signed Kernel Drivers (Audit & Blocked)
+// Author: AdminSignal (https://adminsignal.com)
+// Purpose: Detects kernel drivers flagged by the Microsoft Vulnerable Driver
+//          Blocklist or ASR rule (56a863a9-875e-4185-98a7-b882c64b5ce5).
+// ============================================================================
+DeviceEvents
+| where Timestamp > ago(30d)
+| where ActionType in ("AsrVulnerableSignedDriverAudited", "AsrVulnerableSignedDriverBlocked")
+| summarize
+    Occurrences = count(),
+    DeviceCount = dcount(DeviceId),
+    ExampleDevices = make_set(DeviceName, 5),
+    SHA256Hashes = make_set(SHA256, 3)
+    by ActionType, FileName, FolderPath, InitiatingProcessFileName
+| order by DeviceCount desc
